@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ستريم هب - منصتك المثالية للفيديو</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #4f46e5;
+            --secondary-color: #10b981;
+            --background-color: #f3f4f6;
+            --text-color: #1f2937;
+            --card-bg: #ffffff;
+            --import-btn-color: #ff4500;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            direction: rtl;
+            text-align: right;
+        }
+
+        .header {
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            padding: 1rem 0;
+        }
+
+        .logo-text {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .video-container {
+            background-color: #000000;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 1rem;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .channel-list {
+            max-height: calc(100vh - 400px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) var(--background-color);
+        }
+
+        .channel-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .channel-list::-webkit-scrollbar-track {
+            background: var(--background-color);
+        }
+
+        .channel-list::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 6px;
+            border: 3px solid var(--background-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background-color: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .channel-item {
+            transition: all 0.3s ease;
+        }
+
+        .channel-item:hover {
+            background-color: #e5e7eb;
+            transform: translateX(-5px);
+        }
+
+        .search-input {
+            transition: all 0.3s ease;
+            width: 0;
+            padding: 0;
+            border: none;
+            opacity: 0;
+        }
+
+        .search-input.active {
+            width: 200px;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 9999px;
+            opacity: 1;
+        }
+
+        .search-icon {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .search-icon:hover {
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 640px) {
+            .search-input.active {
+                width: 100%;
+            }
+        }
+
+        .import-icon {
+            cursor: pointer;
+            margin-right: 10px;
+            color: var(--import-btn-color);
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .import-icon:hover {
+            transform: scale(1.1);
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <header class="header">
+        <div class="container mx-auto flex justify-between items-center px-4">
+            <div class="relative flex items-center">
+                <input type="text" id="searchInput" class="search-input" placeholder="ابحث عن القنوات...">
+                <i class="fas fa-search search-icon text-xl mr-2" id="searchIcon"></i>
+            </div>
+            <h1 class="logo-text flex items-center">
+                <i class="fas fa-play-circle ml-2"></i>
+                ستريم هب
+            </h1>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto py-8 px-4">
+        <div class="flex flex-col lg:flex-row gap-8">
+            <div class="lg:w-2/3">
+                <div id="videoSection" class="video-container">
+                    <video id="videoPlayer" controls autoplay></video>
+                </div>
+                <h2 id="currentChannelTitle" class="text-2xl font-semibold mb-4 flex items-center">
+                    <i class="fas fa-tv ml-2"></i>
+                    <span id="channelName">اختر قناة لبدء المشاهدة</span>
+                    <i class="fas fa-file-import import-icon ml-2" id="importIcon" onclick="toggleImportSection()"></i>
+                </h2>
+            </div>
+            <div class="lg:w-1/3">
+                <div id="importSection" class="card p-4 mb-4">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center">
+                        <i class="fas fa-file-import ml-2"></i>
+                        استيراد قائمة تشغيل M3U
+                    </h3>
+                    <input type="file" id="m3uFile" accept=".m3u,.m3u8" class="hidden">
+                    <label for="m3uFile" class="btn-primary block w-full text-center py-2 px-4 rounded-md cursor-pointer mb-2">
+                        <i class="fas fa-folder-open ml-2"></i>
+                        اختر ملف M3U
+                    </label>
+                    <input type="text" id="m3uUrl" class="w-full p-2 mb-2 border border-gray-300 rounded-md" placeholder="أدخل رابط قائمة تشغيل M3U">
+                    <button id="importBtn" class="btn-secondary w-full py-2 px-4 rounded-md">
+                        <i class="fas fa-download ml-2"></i>
+                        استيراد قائمة تشغيل M3U
+                    </button>
+                </div>
+                <div class="card p-4">
+                    <h3 class="text-lg font-semibold mb-2 flex items-center">
+                        <i class="fas fa-list ml-2"></i>
+                        القنوات
+                    </h3>
+                    <ul id="channelList" class="channel-list space-y-2"></ul>
+                </div>
+            </div>
+        </div>
+    </main>
+
+ <script>
+    const channelList = document.getElementById('channelList');
+    const searchInput = document.getElementById('searchInput');
+    const searchIcon = document.getElementById('searchIcon');
+    const m3uFile = document.getElementById('m3uFile');
+    const m3uUrl = document.getElementById('m3uUrl');
+    const importBtn = document.getElementById('importBtn');
+    const currentChannelTitle = document.getElementById('currentChannelTitle');
+    const videoSection = document.getElementById('videoSection');
+    const importSection = document.getElementById('importSection');
+    const importIcon = document.getElementById('importIcon');
+    const videoPlayer = document.getElementById('videoPlayer');
+
+    let channels = [];
+    let hls;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadSavedChannels();
+
+        if (channels.length === 0) {
+            importSection.style.display = 'block';
+        } else {
+            importSection.style.display = 'none';
+        }
+    });
+
+    m3uFile.addEventListener('change', handleFileUpload);
+    importBtn.addEventListener('click', importM3uPlaylist);
+    searchInput.addEventListener('input', filterChannels);
+    searchIcon.addEventListener('click', toggleSearch);
+
+    function toggleSearch() {
+        searchInput.classList.toggle('active');
+        if (searchInput.classList.contains('active')) {
+            searchInput.focus();
+        } else {
+            searchInput.value = '';
+            filterChannels();
+        }
+    }
+
+    function toggleImportSection() {
+        importSection.style.display = importSection.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                channels = parseM3u(content);
+                saveChannels();
+                renderChannelList();
+                hideImportSection();
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    function importM3uPlaylist() {
+        const url = m3uUrl.value.trim();
+        if (!url) {
+            alert('الرجاء إدخال رابط صالح لقائمة تشغيل M3U');
+            return;
+        }
+
+        fetch(url)
+            .then(response => response.text())
+            .then(data => {
+                channels = parseM3u(data);
+                saveChannels();
+                renderChannelList();
+                hideImportSection();
+            })
+            .catch(error => {
+                console.error('خطأ في استيراد قائمة تشغيل M3U:', error);
+                alert('فشل استيراد قائمة تشغيل M3U. يرجى التحقق من الرابط والمحاولة مرة أخرى.');
+            });
+    }
+
+    function hideImportSection() {
+        importSection.style.display = 'none';
+    }
+
+    function parseM3u(m3uContent) {
+        const lines = m3uContent.split('\n');
+        const channels = [];
+        let currentChannel = {};
+
+        for (let line of lines) {
+            line = line.trim();
+            if (line.startsWith('#EXTINF:')) {
+                const titleMatch = line.match(/,(.+)$/);
+                if (titleMatch) {
+                    currentChannel.title = titleMatch[1];
+                }
+            } else if (line.startsWith('http')) {
+                currentChannel.url = line;
+                channels.push(currentChannel);
+                currentChannel = {};
+            }
+        }
+
+        return channels;
+    }
+
+    function renderChannelList(filteredChannels = channels) {
+        channelList.innerHTML = '';
+        filteredChannels.forEach((channel, index) => {
+            const li = document.createElement('li');
+            li.className = 'channel-item p-2 bg-gray-100 rounded-md cursor-pointer hover:bg-gray-200 transition duration-300 flex items-center';
+            li.innerHTML = `
+                <span class="flex-grow">${channel.title}</span>
+                <i class="fas fa-broadcast-tower mr-2"></i>
+            `;
+            li.onclick = () => playChannel(channels.indexOf(channel));
+            channelList.appendChild(li);
+        });
+    }
+
+    async function playChannel(index) {
+        const channel = channels[index];
+        document.getElementById('channelName').textContent = `قيد التشغيل الآن: ${channel.title}`;
+
+        // تجربة عدة طرق لتشغيل البث
+        const playMethods = [
+            playHLS,
+            playDASH,
+            playDirect
+        ];
+
+        for (const method of playMethods) {
+            try {
+                await method(channel.url);
+                return; // إذا نجح التشغيل، نخرج من الدالة
+            } catch (error) {
+                console.error(`فشل التشغيل باستخدام ${method.name}:`, error);
+            }
+        }
+
+        // إذا فشلت جميع المحاولات
+        alert('عذرًا، لم نتمكن من تشغيل هذه القناة. يرجى المحاولة مرة أخرى أو اختيار قناة أخرى.');
+    }
+
+    function playHLS(url) {
+        return new Promise((resolve, reject) => {
+            if (Hls.isSupported()) {
+                if (hls) {
+                    hls.destroy();
+                }
+                hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(videoPlayer);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    videoPlayer.play().then(resolve).catch(reject);
+                });
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        reject(new Error('HLS error: ' + data.type));
+                    }
+                });
+            } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+                videoPlayer.src = url;
+                videoPlayer.addEventListener('loadedmetadata', function() {
+                    videoPlayer.play().then(resolve).catch(reject);
+                });
+            } else {
+                reject(new Error('HLS is not supported'));
+            }
+        });
+    }
+
+    function playDASH(url) {
+        return new Promise((resolve, reject) => {
+            if (dashjs && dashjs.supportsMediaSource()) {
+                const dashPlayer = dashjs.MediaPlayer().create();
+                dashPlayer.initialize(videoPlayer, url, true);
+                dashPlayer.on('error', function(e) {
+                    reject(new Error('DASH error: ' + e.error));
+                });
+                dashPlayer.on('canPlay', function() {
+                    videoPlayer.play().then(resolve).catch(reject);
+                });
+            } else {
+                reject(new Error('DASH is not supported'));
+            }
+        });
+    }
+
+    function playDirect(url) {
+        return new Promise((resolve, reject) => {
+            videoPlayer.src = url;
+            videoPlayer.oncanplay = () => {
+                videoPlayer.play().then(resolve).catch(reject);
+            };
+            videoPlayer.onerror = () => {
+                reject(new Error('Direct playback failed'));
+            };
+        });
+    }
+
+    function filterChannels() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const filteredChannels = channels.filter(channel => 
+            channel.title.toLowerCase().includes(searchTerm)
+        );
+        renderChannelList(filteredChannels);
+    }
+
+    function saveChannels() {
+        localStorage.setItem('channels', JSON.stringify(channels));
+    }
+
+    function loadSavedChannels() {
+        const savedChannels = localStorage.getItem('channels');
+        if (savedChannels) {
+            channels = JSON.parse(savedChannels);
+            renderChannelList();
+        }
+    }
+
+    videoSection.scrollIntoView({ behavior: 'smooth' });
+</script>
+</body>
+</html>
